@@ -1,0 +1,84 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  userId                Int            @id @default(autoincrement())
+  username              String         @unique
+  password              String
+  currentToken String? // <-- Lưu access token đang dùng
+  role                  String
+  email                 String? @unique
+  isActive              Boolean        @default(true)
+  incidents             Incident[]     @relation("UserIncidents")
+  handledIncidents      Incident[]     @relation("StaffHandledIncidents")
+  staffRatingsGiven     StaffRating[]  @relation("StaffRatingUser")
+  staffRatingsReceived  StaffRating[]  @relation("StaffRatingStaff")
+}
+
+model Room {
+  roomId      Int         @id @default(autoincrement())
+  name        String      @unique
+  description String?
+  incidents   Incident[]
+}
+
+model IncidentType {
+  incidentTypeId Int      @id @default(autoincrement())
+  name           String   @unique
+  description    String?
+  incidents      Incident[]
+}
+
+enum IncidentStatus {
+  pending
+  processing
+  resolved
+  cancelled
+}
+
+model Incident {
+  incidentId     Int          @id @default(autoincrement())
+  title          String
+  description    String
+  imageUrls      String[]
+  status         IncidentStatus @default(pending)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  user           User         @relation("UserIncidents", fields: [userId], references: [userId])
+  userId         Int
+  room           Room         @relation(fields: [roomId], references: [roomId])
+  roomId         Int
+  incidentType   IncidentType @relation(fields: [incidentTypeId], references: [incidentTypeId])
+  incidentTypeId Int
+  handledBy      User?        @relation("StaffHandledIncidents", fields: [handledById], references: [userId])
+  handledById    Int?
+  staffRating    StaffRating?
+}
+  model ForgotPassword {
+  id        Int      @id @default(autoincrement())
+  email     String
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StaffRating {
+  staffRatingId Int      @id @default(autoincrement())
+  incident      Incident @relation(fields: [incidentId], references: [incidentId])
+  incidentId    Int      @unique
+  staff         User     @relation("StaffRatingStaff", fields: [staffId], references: [userId])
+  staffId       Int
+  user          User     @relation("StaffRatingUser", fields: [userId], references: [userId])
+  userId        Int
+  rating        Int      // 1-5
+  comment       String?
+  createdAt     DateTime @default(now())
+}
+
+
